@@ -1,0 +1,41 @@
+name: Build mod
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+
+      # works whether you uploaded the folder or just palefall-mod.zip
+      - name: Locate project
+        run: |
+          if [ -f palefall-mod.zip ]; then
+            unzip -q palefall-mod.zip
+            echo "DIR=palefall-mod" >> "$GITHUB_ENV"
+          elif [ -f build.gradle ]; then
+            echo "DIR=." >> "$GITHUB_ENV"
+          else
+            echo "No project found"; exit 1
+          fi
+
+      - name: Build
+        run: gradle build --stacktrace
+        working-directory: ${{ env.DIR }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: palefall-mod-jar
+          path: ${{ env.DIR }}/build/libs/*.jar
